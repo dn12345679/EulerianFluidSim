@@ -36,13 +36,13 @@ let dens = new Array(size).fill(0);
 let dens_prev = new Array(size).fill(0);
 
 const visc = 0.0001;
-const diff = 0.0002;
+const diff = 0.007;
 const dt = 0.1;
 
 let mouseX = 0, mouseY = 0;
 let pmouseX = 0, pmouseY = 0;
 let mdown = false;
-const FORCE = 5.0;
+const FORCE = 100.0;
 
 canvas.addEventListener('mousedown', (e) => {
   mdown = true;
@@ -90,6 +90,7 @@ function resetSources() {
     u_prev[i] = 0;
     v_prev[i] = 0;
   }
+
 }
  
  // SECTION: mechanics
@@ -118,14 +119,13 @@ function get_from_UI() {
   const i = Math.floor(mouseX / cellSize) + 1;
   const j = Math.floor(mouseY / cellSize) + 1;
   if (i < 1 || i > GRID_SIZE || j < 1 || j > GRID_SIZE) return;
-  // Add density
-  dens_prev[IX(i, j)] = 5.0;
+  dens_prev[IX(i, j)] = FORCE;
   
 
-  if (i > 1) dens_prev[IX(i-1, j)] = 2.5;
-  if (i < GRID_SIZE) dens_prev[IX(i+1, j)] = 2.5;
-  if (j > 1) dens_prev[IX(i, j-1)] = 2.5;
-  if (j < GRID_SIZE) dens_prev[IX(i, j+1)] = 2.5;
+  if (i > 1) dens_prev[IX(i-1, j)] = FORCE/2;
+  if (i < GRID_SIZE) dens_prev[IX(i+1, j)] = FORCE/2;
+  if (j > 1) dens_prev[IX(i, j-1)] = FORCE/2;
+  if (j < GRID_SIZE) dens_prev[IX(i, j+1)] = FORCE/2;
 
   const dx = mouseX - pmouseX;
   const dy = mouseY - pmouseY;
@@ -188,15 +188,12 @@ function advect(N, b, d, d0, u, v, dt) {
  
   for (let i = 1; i <= N; i++) {
     for (let j = 1; j <= N; j++) {
-      // Trace particle back
       let x = i - dt0 * u[IX(i, j)];
       let y = j - dt0 * v[IX(i, j)];
       
-      // Clamp to grid boundaries
       x = Math.max(0.5, Math.min(N + 0.5, x));
       y = Math.max(0.5, Math.min(N + 0.5, y));
       
-      // Bilinear interpolation
       let i0 = Math.floor(x);
       let i1 = i0 + 1;
       let j0 = Math.floor(y);
@@ -256,7 +253,6 @@ function vel_step(N, u, v, u0, v0, visc, dt) {
 function project(N, u, v, p, div) {
   let h = 1.0 / N;
   
-  // Calculate divergence
   for (let i = 1; i <= N; i++) {
     for (let j = 1; j <= N; j++) {
       div[IX(i, j)] = -0.5 * h * (
